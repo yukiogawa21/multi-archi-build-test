@@ -1,0 +1,63 @@
+name: docker build
+
+# 1. Controls when the workflow will run
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev'
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - 'main'
+      - 'dev'
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      IMAGE_NAME: sample-app
+    steps:
+    # 2. setup variables
+    - name: Define variables
+      uses: FranzDiebold/github-env-vars-action@v2
+    - name: Get current date
+      id: date
+      run: echo "today=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+    # 3. Checkout code
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # 4. Login DockerHub
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # 5. setup buildx
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # 6. Build and Push
+    - name: Build and push
+      id: docker_build
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm/v7,linux/arm64
+        push: true
+        # 7. nameing
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}:latest
+          ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.event.repository.name }}:${{ steps.date.outputs.today }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
