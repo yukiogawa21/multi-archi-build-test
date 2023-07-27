@@ -55,7 +55,7 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm/v7,linux/arm64
         push: true
-        provenance: false
+        #provenance: false
         
         # 7. nameing
         tags: |
